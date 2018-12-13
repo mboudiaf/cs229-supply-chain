@@ -30,3 +30,7 @@ Using default setting :
 python fitting_nfq.py
 ```
 This will save the actions taken on the test days, which you can then visualize using the notebook visualize_nfq_agent.ipynb
+
+## Author
+
+Malik Boudiaf, mboudiaf@stanford.edu

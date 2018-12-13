@@ -1,0 +1,6 @@
+
+#Lecture des fichiers en entrée et transformation en table
+# Choix du format
+# Date & heure, prix de l'électricité, solar normalisé, wind normalisé
+file = "Data/solar";
+fichier = open(file);

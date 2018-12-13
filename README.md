@@ -16,6 +16,6 @@ about the project, go to presentation_documents/ and read our paper on the proje
 
 ## Authors
 
-Malik Boudiaf - mboudiaf@stanford.edu
-Calvin McSweeny - calvinmc@stanford.edu
-Zoe Ghiron - zghiron@ stanford.edu
+Malik Boudiaf - mboudiaf@stanford.edu \\
+Calvin McSweeny - calvinmc@stanford.edu \\
+Zoe Ghiron - zghiron@stanford.edu \\

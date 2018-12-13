@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 from main_V3 import import_data_csv, optim_main
 
 #%% Path to input files
-path_price_power_spot = "../cs229_MILP/input_data/electricity_market/day_ahead_France.csv"
+path_price_power_spot = "../cs229_MILP/input_data/electricity_market/day_ahead_sept2018_France.csv"
 path_h2flow_sales_industry = "../cs229_MILP/input_data/hydrogen_demand/demand_industry.csv"
-path_h2flow_sales_mobility = "../cs229_MILP/input_data/hydrogen_demand/demand_mobility.csv"
+path_h2flow_sales_mobility = "../cs229_MILP/input_data/hydrogen_demand/demand_mobility_V2.csv"
 
 #%% Duration simulation (max 30)
 # Number of days
@@ -82,12 +82,12 @@ c_H2_mobility = 2.0 # [$/kg(H2)]
 
 #%% Inputs
 # Simulation solar production 
-curve_solar = import_data_csv("../cs229_MILP/input_data/production_sites/solar_prod.csv") # Normalized solar production for farm in selected country
-solar_prod = 1e3*capa_solar[0]*curve_solar[::4,1]/max(curve_solar[::4,1]) # [kW]
+curve_solar = import_data_csv("../cs229_MILP/input_data/production_sites/solar_prod_real_sept2018.csv") # Normalized solar production for farm in selected country
+solar_prod = 1e3*capa_solar[3]*curve_solar[7*4::4,1]/max(curve_solar[::4,1]) # [kW]
 
 # Simulation wind production
-curve_wind = import_data_csv("../cs229_MILP/input_data/production_sites/wind_prod.csv") # Normalized wind production for a farm in selected country
-wind_prod = 1e3*capa_wind[0]*curve_wind[::4,1]/max(curve_wind[::4,1]) # [kW]
+curve_wind = import_data_csv("../cs229_MILP/input_data/production_sites/wind_prod_real_sept2018.csv") # Normalized wind production for a farm in selected country
+wind_prod = 1e3*capa_wind[3]*curve_wind[7*4::4,1]/max(curve_wind[::4,1]) # [kW]
 
 #%% Optimization 
 
@@ -100,6 +100,65 @@ path_data = [path_price_power_spot, path_h2flow_sales_industry, path_h2flow_sale
 [y_conv,Eps_batt,M_vess,Psi_conv,Phi_conv,Psi_grid,R] = optim_main(design_conv, N_conv[2], design_batt, N_batt[3], design_vess, N_vess[3], solar_prod, wind_prod, c_H2_industry, c_H2_mobility, N_d, path_data)
 
 
+#%% Inputs
+# Simulation solar production 
+curve_solar = import_data_csv("../cs229_MILP/input_data/production_sites/solar_prod_week_ahead_sept2018.csv") # Normalized solar production for farm in selected country
+solar_prod = 1e3*capa_solar[3]*curve_solar[7*4::4,1]/max(curve_solar[::4,1]) # [kW]
 
+# Simulation wind production
+curve_wind = import_data_csv("../cs229_MILP/input_data/production_sites/wind_prod_week_ahead_sept2018.csv") # Normalized wind production for a farm in selected country
+wind_prod = 1e3*capa_wind[3]*curve_wind[7*4::4,1]/max(curve_wind[::4,1]) # [kW]
+
+wi = 0
+so = 0
+for i in range(24*7):
+    wi += wind_prod[i]/1e3
+    so += solar_prod[i]/1e3
+wi = wi/(24*N_d)
+so = so/(24*N_d)
+
+
+#%% Optimization 
+
+# Selection of battery type
+design_batt = np.array(battery[:, type_batt["Li-ion"]]).reshape(-1,)
+# Paths to input lists
+path_data = [path_price_power_spot, path_h2flow_sales_industry, path_h2flow_sales_mobility]
+
+# Optimization process
+[y_conv,Eps_batt,M_vess,Psi_conv,Phi_conv,Psi_grid2,R] = optim_main(design_conv, N_conv[2], design_batt, N_batt[3], design_vess, N_vess[3], solar_prod, wind_prod, c_H2_industry, c_H2_mobility, N_d, path_data)
+
+Eps_spot = import_data_csv(path_price_power_spot)
+Eps_spot = Eps_spot[0:24*N_d,1]*1e-3
+
+cost = np.zeros((24*N_d,))
+for i in range(24*N_d):
+    cost[i] = 1.2*Eps_spot[i]*(Psi_grid[i]-Psi_grid2[i])
+    
+
+
+N_t = 24*N_d
+plt.figure()
+plt.subplot(2,1,1)
+plt.bar(np.arange(N_t),Psi_grid,0.8,align="edge",label='real',color=(1,0,0,0.5)) 
+plt.bar(np.arange(N_t),Psi_grid2,0.8,align="edge",label='prediction',color=(0,0,1,0.5))
+plt.xlabel("time [hrs]")
+#    plt.xticks([24*7*5*i for i in range(52)], [5*i for i in range(26)])
+plt.xlim([0, 24*N_d])
+plt.ylabel("Net power in [kWh]")
+plt.ylim([1.2*min(Psi_grid), 1.2*max(Psi_grid)])
+plt.gca().yaxis.grid(True)
+plt.legend()
+plt.show()
+plt.title("Cost due to approximation of the solar & wind production" )
+plt.subplot(2,1,2)
+plt.bar(np.arange(N_t),cost,0.95,align="edge")
+plt.xlabel("time [hr]")
+#    plt.xticks(H2_dc[0::7*5,0], [5*i for i in range(11)])
+plt.xlim([0, 24*N_d])
+plt.ylabel("Extra cost [$]")
+plt.ylim([1.3*min(cost), 1.3*max(cost)])
+plt.gca().yaxis.grid(True)
+plt.show()
 
 
